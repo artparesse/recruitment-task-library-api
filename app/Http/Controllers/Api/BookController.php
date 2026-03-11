@@ -9,6 +9,7 @@ use App\Http\Requests\StoreBookRequest;
 use App\Http\Requests\UpdateBookRequest;
 use App\Http\Resources\BookResource;
 use App\Models\Book;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -26,7 +27,7 @@ class BookController extends Controller
         return new BookResource($book->load('authors'));
     }
 
-    public function store(StoreBookRequest $request): BookResource
+    public function store(StoreBookRequest $request): JsonResponse
     {
         $book = Book::create($request->validated());
         $book->authors()->sync($request->validated('author_ids'));
