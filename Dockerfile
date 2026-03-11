@@ -19,7 +19,7 @@ WORKDIR /var/www
 
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader \
+RUN composer install --optimize-autoloader \
     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 EXPOSE 9000
