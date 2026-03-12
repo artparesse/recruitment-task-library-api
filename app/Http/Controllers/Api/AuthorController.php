@@ -18,10 +18,10 @@ class AuthorController extends Controller
 
         $authors = Author::with('books')
             ->when(
-                $request->validated('search'),
-                fn ($query, $search) => $query->whereHas(
+                $request->input('search'),
+                fn($query, $search) => $query->whereHas(
                     'books',
-                    fn ($q) => $q->where('title', 'LIKE', "%{$search}%")
+                    fn($q) => $q->where('title', 'LIKE', "%{$search}%")
                 )
             )
             ->paginate();
