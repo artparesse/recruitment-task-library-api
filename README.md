@@ -1,59 +1,186 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Library API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API for managing a library — books and authors. Built with Laravel 12, PHP 8.5, MySQL, Redis, and Docker.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Requirements
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Docker & Docker Compose (recommended)
+- **or** PHP 8.5+, Composer, MySQL 8, Redis (local setup)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Setup (Docker)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```bash
+# 1. Clone and enter the project
+git clone <repo-url> library-api
+cd library-api
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# 2. Copy environment file
+cp .env.example .env
 
-## Laravel Sponsors
+# 3. Build and start containers
+docker compose up -d --build
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# 4. Install dependencies
+docker compose exec app composer install
 
-### Premium Partners
+# 5. Generate application key
+docker compose exec app php artisan key:generate
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# 6. Run migrations and seed test data
+docker compose exec app php artisan migrate --seed
+```
 
-## Contributing
+The API is available at **http://localhost:8080**.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Queue Worker
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The `worker` service starts automatically with Docker Compose and processes Redis queues:
 
-## Security Vulnerabilities
+```bash
+# Already running via docker-compose worker service
+# To run manually inside the container:
+docker compose exec app php artisan queue:work
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Running Tests
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+docker compose exec app php artisan test
+```
+
+---
+
+## Authentication (Sanctum Token)
+
+Write endpoints (POST / PUT / DELETE on `/api/books`) require a Bearer token.
+
+**Obtain a token:**
+
+```bash
+curl -s -X POST http://localhost:8080/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password"}' | jq .
+```
+
+Response:
+```json
+{ "token": "1|plainTextToken..." }
+```
+
+Use the token in subsequent requests:
+```
+Authorization: Bearer 1|plainTextToken...
+```
+
+**Test credentials (seeded):**
+- Email: `test@example.com`
+- Password: `password`
+
+---
+
+## Implemented Features
+
+### Core
+- **Books CRUD** — list, show, create, update, delete
+- **Authors** — list and show with related books
+- **Many-to-many** relationship between books and authors (`author_book` pivot)
+- **Pagination** — `page` and `per_page` (default 15, max 100) query parameters
+- **Search** — `GET /api/authors?search=war` filters authors by book title
+- **Validation** — Form Requests (`StoreBookRequest`, `UpdateBookRequest`)
+- **API Resources** — consistent JSON structure without circular nesting
+- **Sanctum auth** — token-based auth for write endpoints
+- **Queue job** — `UpdateAuthorLatestBookTitle` dispatched via `BookObserver` on book creation, updates `latest_book_title` on all related authors
+- **Artisan command** — `php artisan author:create` (interactive prompt)
+- **Docker Compose** — PHP-FPM, Nginx, MySQL 8, Redis, dedicated queue worker
+- **Database seeder** — test user + 15 authors + 100 books with random author assignments
+
+### Additional
+- **Postman collection** — `Library_API.postman_collection.json` ready to import
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | /api/login | No | Obtain Sanctum token |
+| GET | /api/books | No | List all books (paginated) |
+| GET | /api/books/{id} | No | Book details with authors |
+| POST | /api/books | Yes | Create a new book |
+| PUT | /api/books/{id} | Yes | Update a book |
+| DELETE | /api/books/{id} | Yes | Delete a book |
+| GET | /api/authors | No | List all authors (paginated, searchable) |
+| GET | /api/authors/{id} | No | Author details with books |
+
+---
+
+## Example curl Requests
+
+### Login
+```bash
+curl -s -X POST http://localhost:8080/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password"}'
+```
+
+### List books (paginated)
+```bash
+curl http://localhost:8080/api/books?page=1&per_page=5
+```
+
+### Get book details
+```bash
+curl http://localhost:8080/api/books/1
+```
+
+### Create a book (auth required)
+```bash
+curl -s -X POST http://localhost:8080/api/books \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"title":"The Pragmatic Programmer","author_ids":[1,2]}'
+```
+
+### Update a book (auth required)
+```bash
+curl -s -X PUT http://localhost:8080/api/books/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"title":"Updated Title"}'
+```
+
+### Delete a book (auth required)
+```bash
+curl -s -X DELETE http://localhost:8080/api/books/1 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### List authors
+```bash
+curl http://localhost:8080/api/authors
+```
+
+### Search authors by book title
+```bash
+curl "http://localhost:8080/api/authors?search=pragmatic"
+```
+
+### Get author details
+```bash
+curl http://localhost:8080/api/authors/1
+```
+
+---
+
+## Postman Collection
+
+Import `Library_API.postman_collection.json` from the project root into Postman.
+Set the `base_url` variable to `http://localhost:8080` and `token` after logging in.
