@@ -1,0 +1,425 @@
+{
+  "info": {
+    "name": "Library API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Laravel Library API - Books and Authors management with Sanctum authentication"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    console.log('Token saved:', json.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "login"]
+            },
+            "description": "Authenticate and receive a Sanctum token. Token is automatically saved to collection variable."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/login"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"token\": \"1|plain_text_token_string\"\n}"
+            },
+            {
+              "name": "Invalid credentials",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"wrong@example.com\",\n  \"password\": \"wrong\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/login"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"message\": \"Invalid credentials.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "List Books",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/books?page=1&per_page=15",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page (default: 15, max: 100)"
+                }
+              ]
+            },
+            "description": "Get paginated list of all books with their authors. No authentication required."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"The Great Novel\",\n      \"authors\": [\n        {\n          \"id\": 1,\n          \"first_name\": \"John\",\n          \"last_name\": \"Smith\"\n        }\n      ]\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://localhost:8000/api/books?page=1\",\n    \"last\": \"http://localhost:8000/api/books?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Book",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/books/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books", "1"]
+            },
+            "description": "Get a single book with all associated authors. No authentication required."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"title\": \"The Great Novel\",\n    \"authors\": [\n      {\n        \"id\": 1,\n        \"first_name\": \"John\",\n        \"last_name\": \"Smith\"\n      },\n      {\n        \"id\": 2,\n        \"first_name\": \"Jane\",\n        \"last_name\": \"Doe\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"message\": \"Not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Book Title\",\n  \"author_ids\": [1, 2]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/books",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books"]
+            },
+            "description": "Create a new book and associate it with existing authors. Requires authentication.\n\nValidation:\n- title: required, string, max 255\n- author_ids: required, array, min 1 element\n- author_ids.*: each ID must exist in authors table"
+          },
+          "response": [
+            {
+              "name": "Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"data\": {\n    \"id\": 5,\n    \"title\": \"New Book Title\",\n    \"authors\": [\n      {\n        \"id\": 1,\n        \"first_name\": \"John\",\n        \"last_name\": \"Smith\"\n      },\n      {\n        \"id\": 2,\n        \"first_name\": \"Jane\",\n        \"last_name\": \"Doe\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Validation Error",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "body": "{\n  \"message\": \"The title field is required.\",\n  \"errors\": {\n    \"title\": [\"The title field is required.\"],\n    \"author_ids\": [\"The author_ids field is required.\"]\n  }\n}"
+            },
+            {
+              "name": "Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Book Title\",\n  \"author_ids\": [1, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/books/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books", "1"]
+            },
+            "description": "Update a book's title and/or author associations. Both fields are optional but must be valid if provided. Requires authentication.\n\nValidation:\n- title: optional, string, max 255\n- author_ids: optional, array, min 1 element\n- author_ids.*: each ID must exist in authors table"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"title\": \"Updated Book Title\",\n    \"authors\": [\n      {\n        \"id\": 1,\n        \"first_name\": \"John\",\n        \"last_name\": \"Smith\"\n      },\n      {\n        \"id\": 3,\n        \"first_name\": \"Bob\",\n        \"last_name\": \"Johnson\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"message\": \"Not found\"\n}"
+            },
+            {
+              "name": "Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/books/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books", "1"]
+            },
+            "description": "Delete a book. Associated pivot entries are cascade deleted. Returns 204 No Content on success. Requires authentication."
+          },
+          "response": [
+            {
+              "name": "No Content",
+              "status": "No Content",
+              "code": 204,
+              "body": ""
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"message\": \"Not found\"\n}"
+            },
+            {
+              "name": "Unauthorized",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authors",
+      "item": [
+        {
+          "name": "List Authors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/authors?page=1&per_page=15",
+              "host": ["{{base_url}}"],
+              "path": ["api", "authors"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page (default: 15, max: 100)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter authors by book title (case-insensitive substring match)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get paginated list of all authors with their books. Supports optional search filtering by book title. No authentication required."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"first_name\": \"John\",\n      \"last_name\": \"Smith\",\n      \"latest_book_title\": \"The Great Novel\",\n      \"books\": [\n        {\n          \"id\": 1,\n          \"title\": \"The Great Novel\"\n        },\n        {\n          \"id\": 5,\n          \"title\": \"War and Peace\"\n        }\n      ]\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://localhost:8000/api/authors?page=1\",\n    \"last\": \"http://localhost:8000/api/authors?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Authors (with search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/authors?search=war",
+              "host": ["{{base_url}}"],
+              "path": ["api", "authors"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "war",
+                  "description": "Filter authors who have books with this substring in the title"
+                }
+              ]
+            },
+            "description": "Get authors filtered by book title. Returns only authors who have at least one book matching the search term (case-insensitive)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Author",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/authors/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "authors", "1"]
+            },
+            "description": "Get a single author with all associated books. No authentication required."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"first_name\": \"John\",\n    \"last_name\": \"Smith\",\n    \"latest_book_title\": \"The Great Novel\",\n    \"books\": [\n      {\n        \"id\": 1,\n        \"title\": \"The Great Novel\"\n      },\n      {\n        \"id\": 5,\n        \"title\": \"War and Peace\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"message\": \"Not found\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
